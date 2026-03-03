@@ -1,0 +1,89 @@
+{
+  "dominance_level": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.35,
+    "max_delta_per_update": 0.05
+  },
+
+  "trust_level": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.5,
+    "max_delta_per_update": 0.03
+  },
+
+  "pattern_confidence_global": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.3,
+    "max_delta_per_update": 0.05
+  },
+
+  "responds_to_pressure": {
+    "type": "boolean",
+    "default": true
+  },
+
+  "warmth_recovery_rate": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.6,
+    "max_delta_per_update": 0.05
+  },
+
+  "recent_resistance_level": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.2,
+    "max_delta_per_update": 0.1
+  },
+
+  "self_doubt_trigger_rate": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.4,
+    "max_delta_per_update": 0.05
+  },
+
+  "ambiguity_stall_probability": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.5,
+    "max_delta_per_update": 0.05
+  },
+
+  "insight_receptiveness": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.6,
+    "max_delta_per_update": 0.05
+  },
+
+  "directive_success_rate": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "default": 0.5,
+    "max_delta_per_update": 0.05
+  },
+
+  "interaction_days": {
+    "type": "integer",
+    "min": 0,
+    "default": 0
+  },
+
+  "proactivity_enabled": {
+    "type": "boolean",
+    "default": false
+  }
+}
