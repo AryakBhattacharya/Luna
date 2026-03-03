@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime
 
 from services.llm_client import generate_response
@@ -31,6 +32,7 @@ class ConversationManager:
         self.last_event = None
         self.last_response = None
         self.event_logger = EventLogger()
+        self.awaiting_completion = False
 
     # ==============================
     # PUBLIC ENTRY POINT
@@ -137,15 +139,52 @@ class ConversationManager:
     # PROMPT BUILDERS
     # ==============================
     def _build_conversation_prompt(self):
+
         core_identity = self._load_file("core/persona/core_identity.txt")
         behavioral_rules = self._load_file("core/persona/behavioral_rules.txt")
 
+        state = self.state
+
+        dominance = state.get("dominance_level", 0.4)
+        resistance = state.get("recent_resistance_level", 0.2)
+        trust = state.get("trust_level", 0.5)
+        proactive = state.get("proactivity_enabled", False)
+
         state_context = (
             "\nCurrent Personality State:\n"
-            + json.dumps(self.state, indent=2)
+            + json.dumps(state, indent=2)
         )
 
-        return f"{core_identity}\n\n{behavioral_rules}\n\n{state_context}"
+        behavior_overlay = f"""
+
+    --------------------------------------
+    LIVE BEHAVIOR CALIBRATION
+    --------------------------------------
+
+    Current dominance level: {dominance}
+    Recent resistance level: {resistance}
+    Trust level: {trust}
+    Proactivity enabled: {proactive}
+
+    Tone Modulation Rules:
+
+    - If dominance > 0.6:
+    Use shorter sentences. Fewer questions. More direct guidance.
+
+    - If dominance < 0.3:
+    Stay lighter. Ask before directing.
+
+    - If resistance > 0.6:
+    Reduce pressure. Avoid directives.
+
+    - If trust > 0.6:
+    Sharper insight allowed.
+
+    - If proactivity_enabled is True:
+    You may initiate structured next steps without being asked.
+    """
+
+        return f"{core_identity}\n\n{behavioral_rules}\n{behavior_overlay}\n{state_context}"
 
     def _build_tool_prompt(self):
         """
@@ -166,26 +205,49 @@ class ConversationManager:
     # ==============================
     def _build_interaction_event(self, user_input, response_text, interaction_type):
 
+        #print("LAST EVENT:", self.last_event)
+
         lower_user = user_input.lower()
         lower_response = response_text.lower()
 
         # -----------------------------
-        # Directive Detection
+        # Directive Detection (Improved)
         # -----------------------------
-        directive_keywords = [
-            "start.",
-            "do it.",
-            "open it.",
-            "now.",
-            "execute.",
-            "five minutes."
+
+        directive_patterns = [
+            r"^start\b",
+            r"^set\b",
+            r"^do it\b",
+            r"^open\b",
+            r"^focus\b",
+            r"^begin\b",
         ]
 
-        directive_given = any(k in lower_response for k in directive_keywords)
+        directive_given = False
 
-        directive_strength = "none"
+        sentences = re.split(r"[.!?]\s*", lower_response.strip())
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            for pattern in directive_patterns:
+                if re.match(pattern, sentence):
+                    directive_given = True
+                    break
+            if directive_given:
+                break
+
+        # Directive strength scales with dominance
+        dominance = self.state.get("dominance_level", 0.4)
+
         if directive_given:
-            directive_strength = "soft_directive"
+            if dominance > 0.75:
+                directive_strength = "firm"
+            elif dominance > 0.5:
+                directive_strength = "moderate"
+            else:
+                directive_strength = "soft"
+        else:
+            directive_strength = "none"
 
         # -----------------------------
         # Insight Detection
@@ -234,16 +296,17 @@ class ConversationManager:
         # -----------------------------
         action_completed = False
 
-        if self.last_event and self.last_event.get("directive_given"):
-            completion_phrases = [
-                "done",
-                "finished",
-                "completed",
-                "i did it",
-                "it's done"
-            ]
+        completion_phrases = [
+            "done",
+            "finished",
+            "completed",
+            "i did it",
+            "it's done"
+        ]
 
-            action_completed = any(p in lower_user for p in completion_phrases)
+        if self.awaiting_completion and any(p in lower_user for p in completion_phrases):
+            action_completed = True
+            self.awaiting_completion = False
 
         # -----------------------------
         # Friction Classification

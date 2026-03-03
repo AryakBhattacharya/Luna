@@ -25,17 +25,26 @@ class EvolutionEngine:
         Update personality state based on structured interaction event.
         """
 
-        self._update_resistance(event, state)
         self._update_directive_success(event, state)
+        self._update_resistance(event, state)
         self._update_dominance(event, state)
         self._update_trust(event, state)
+
+        if state.get("directive_success_rate", 0.5) > 0.65 and \
+            state.get("trust_level", 0.5) > 0.6:
+                state["proactivity_enabled"] = True
 
     # ==============================
     # UPDATE METHODS
     # ==============================
 
     def _update_resistance(self, event, state):
+        # If user completed directive, do NOT apply resistance penalty
+        if event.get("action_completed"):
+            return  # do not apply resistance penalty
+        
         resistance = event.get("user_resistance_level", 0.2)
+
         self._bounded_update(
             state,
             "recent_resistance_level",
@@ -58,10 +67,10 @@ class EvolutionEngine:
         dominance = state.get("dominance_level", 0.4)
 
         if event.get("directive_given") and event.get("action_completed"):
-            dominance += 0.03
+            dominance += 0.04
 
         if event.get("directive_given") and not event.get("action_completed"):
-            dominance -= 0.04
+            dominance -= 0.03
 
         if event.get("misjudgment_occurred"):
             dominance -= 0.03
