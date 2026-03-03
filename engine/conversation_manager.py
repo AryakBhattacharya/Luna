@@ -62,6 +62,10 @@ class ConversationManager:
             {"role": "user", "content": user_input}
         ]
 
+        #print("\n--- SYSTEM PROMPT ---")
+        #print(system_prompt)
+        #print("---------------------\n")
+
         response_text = generate_response(messages)
 
         event = self._build_interaction_event(
