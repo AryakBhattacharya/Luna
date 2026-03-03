@@ -1,0 +1,90 @@
+{
+  "timestamp": "ISO-8601 string",
+
+  "interaction_type": {
+    "type": "string",
+    "allowed": [
+      "conversation",
+      "directive",
+      "insight",
+      "tool_execution",
+      "proactive_nudge"
+    ]
+  },
+
+  "task_context": {
+    "type": "string",
+    "allowed": [
+      "creative",
+      "technical",
+      "administrative",
+      "personal_growth",
+      "uncategorized"
+    ]
+  },
+
+  "emotional_signal_detected": {
+    "type": "string",
+    "allowed": [
+      "stable",
+      "mild_self_doubt",
+      "overwhelm",
+      "avoidance",
+      "low_energy",
+      "frustration",
+      "uncertain"
+    ]
+  },
+
+  "friction_type": {
+    "type": "string",
+    "allowed": [
+      "ambiguity",
+      "overwhelm",
+      "energy_depletion",
+      "fear_of_imperfection",
+      "avoidance",
+      "none"
+    ]
+  },
+
+  "directive_given": {
+    "type": "boolean"
+  },
+
+  "directive_strength": {
+    "type": "string",
+    "allowed": [
+      "none",
+      "question",
+      "observation",
+      "soft_directive"
+    ]
+  },
+
+  "action_completed": {
+    "type": "boolean"
+  },
+
+  "completion_latency_seconds": {
+    "type": "number"
+  },
+
+  "user_resistance_level": {
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0
+  },
+
+  "insight_given": {
+    "type": "boolean"
+  },
+
+  "insight_acknowledged": {
+    "type": "boolean"
+  },
+
+  "misjudgment_occurred": {
+    "type": "boolean"
+  }
+}

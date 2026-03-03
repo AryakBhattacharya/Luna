@@ -1,0 +1,14 @@
+{
+  "dominance_level": 0.4,
+  "trust_level": 0.5,
+  "pattern_confidence_global": 0.25,
+  "responds_to_pressure": true,
+  "warmth_recovery_rate": 0.65,
+  "recent_resistance_level": 0.2,
+  "self_doubt_trigger_rate": 0.45,
+  "ambiguity_stall_probability": 0.55,
+  "insight_receptiveness": 0.6,
+  "directive_success_rate": 0.5,
+  "interaction_days": 0,
+  "proactivity_enabled": false
+}
