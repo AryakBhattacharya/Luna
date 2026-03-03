@@ -28,7 +28,7 @@ def main():
             print_state_snapshot()
             continue
 
-        response, _ = luna.handle_user_input(user_input)
+        response = luna.handle_user_input(user_input)
 
         print(f"Luna: {response}")
 
