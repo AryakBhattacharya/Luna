@@ -1,42 +1,78 @@
 from openai import OpenAI
 from services.config_loader import load_model_config
+from utils.event_logger import log_event
 
-client = OpenAI()
+
+class LLMClient:
+
+    def __init__(self):
+        self.client = OpenAI()
+
+        self.model_config = load_model_config()
+
+        self.default_model = self.model_config["default_model"]
+        self.fallback_model = self.model_config["fallback_model"]
 
 
-def generate_response(
-    messages,
-    temperature=None,
-    max_tokens=None,
-    top_p=None,
-    return_raw=False
-):
-    """
-    Sends chat completion request to OpenAI.
+    def choose_model(self, user_input):
 
-    Parameters:
-    - messages: list of dicts (chat format)
-    - temperature: optional override
-    - max_tokens: optional override
-    - top_p: optional override
-    - return_raw: if True, return full response object
+        complex_keywords = [
+            "analyze",
+            "architecture",
+            "design",
+            "algorithm",
+            "optimize",
+            "strategy",
+            "explain deeply",
+            "compare",
+            "break down"
+        ]
 
-    Returns:
-    - response text (default)
-    - or full API response if return_raw=True
-    """
+        text = user_input.lower()
 
-    config = load_model_config()
+        for word in complex_keywords:
+            if word in text:
+                return "gpt-4o"
 
-    response = client.chat.completions.create(
-        model=config["model"],
-        messages=messages,
-        temperature=temperature if temperature is not None else config["temperature"],
-        max_tokens=max_tokens if max_tokens is not None else config["max_tokens"],
-        top_p=top_p if top_p is not None else config["top_p"],
-    )
+        return "gpt-4o-mini"
 
-    if return_raw:
-        return response
 
-    return response.choices[0].message.content
+    def call_model(self, model_name, messages):
+
+        config = self.model_config["models"][model_name]
+
+        response = self.client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=config["temperature"],
+            max_tokens=config["max_tokens"],
+            top_p=config["top_p"],
+            timeout=30
+        )
+
+        return response.choices[0].message.content
+
+
+    def generate_response(self, messages, user_input="", tool_mode=False):
+
+        if tool_mode:
+            model_name = "gpt-4o-mini"
+        else:
+            model_name = self.choose_model(user_input)
+
+        try:
+            return self.call_model(model_name, messages)
+
+        except Exception as e:
+
+            log_event("LLM_ERROR", f"{model_name} failed: {str(e)}")
+
+            try:
+                log_event("LLM_FALLBACK", f"Retrying with {self.fallback_model}")
+                return self.call_model(self.fallback_model, messages)
+
+            except Exception as e2:
+
+                log_event("LLM_FATAL", str(e2))
+
+                return "Sorry, I’m having trouble responding right now."
