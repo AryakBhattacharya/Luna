@@ -1,6 +1,6 @@
 from openai import OpenAI
 from services.config_loader import load_model_config
-from utils.event_logger import log_event
+from utils.event_logger import EventLogger
 
 
 class LLMClient:
@@ -9,6 +9,8 @@ class LLMClient:
         self.client = OpenAI()
 
         self.model_config = load_model_config()
+
+        self.logger = EventLogger()
 
         self.default_model = self.model_config["default_model"]
         self.fallback_model = self.model_config["fallback_model"]
@@ -65,14 +67,14 @@ class LLMClient:
 
         except Exception as e:
 
-            log_event("LLM_ERROR", f"{model_name} failed: {str(e)}")
+            self.logger.log_event("LLM_ERROR", f"{model_name} failed: {str(e)}")
 
             try:
-                log_event("LLM_FALLBACK", f"Retrying with {self.fallback_model}")
+                self.logger.log_event("LLM_FALLBACK", f"Retrying with {self.fallback_model}")
                 return self.call_model(self.fallback_model, messages)
 
             except Exception as e2:
 
-                log_event("LLM_FATAL", str(e2))
+                self.logger.log_event("LLM_FATAL", str(e2))
 
                 return "Sorry, I’m having trouble responding right now."

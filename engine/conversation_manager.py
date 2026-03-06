@@ -7,6 +7,8 @@ from engine.evolution_engine import EvolutionEngine
 from engine.tool_router import ToolRouter
 from utils.state_manager import StateManager
 from utils.event_logger import EventLogger
+from utils.pattern_memory import PatternMemory
+from engine.pattern_interpreter import PatternInterpreter
 
 
 class ConversationManager:
@@ -23,11 +25,34 @@ class ConversationManager:
         self.mode_detector = ModeDetector()
         self.evolution_engine = EvolutionEngine()
         self.tool_router = ToolRouter()
-
+        self.pattern_memory = PatternMemory.load()
         self.event_logger = EventLogger()
 
         self.last_event = None
         self.last_response = None
+
+
+    # =========================================
+    # Pattern Memory
+    # =========================================
+
+    def _update_pattern_memory(self, event):
+
+        memory = self.pattern_memory
+
+        memory["conversation_count"] = memory.get("conversation_count", 0) + 1
+
+        if event.get("friction_type") == "avoidance":
+            memory["avoidance_patterns"] = memory.get("avoidance_patterns", 0) + 1
+
+        if event.get("directive_given") and event.get("action_completed"):
+            memory["directive_follow_through"] = memory.get("directive_follow_through", 0) + 1
+
+        if event.get("insight_given") and event.get("insight_acknowledged"):
+            memory["insight_acceptance"] = memory.get("insight_acceptance", 0) + 1
+
+        PatternMemory.save(memory)
+        self.pattern_memory = memory
 
 
     # =========================================
@@ -78,6 +103,7 @@ class ConversationManager:
         self.event_logger.log_event(event)
 
         self.evolution_engine.process_event(event, self.state)
+        self._update_pattern_memory(event)
 
         StateManager.save_state(self.state)
 
@@ -130,6 +156,7 @@ class ConversationManager:
         self.event_logger.log_event(event)
 
         self.evolution_engine.process_event(event, self.state)
+        self._update_pattern_memory(event)
 
         StateManager.save_state(self.state)
 
@@ -151,6 +178,26 @@ class ConversationManager:
         resistance = state.get("recent_resistance_level", 0.2)
         trust = state.get("trust_level", 0.5)
         proactive = state.get("proactivity_enabled", False)
+
+        pattern_context = f"""
+
+--------------------------------------
+KNOWN USER BEHAVIOR PATTERNS
+--------------------------------------
+
+{json.dumps(self.pattern_memory, indent=2)}
+
+Interpretation Guidelines:
+- Higher avoidance_patterns → user tends to hesitate starting tasks.
+- Higher directive_follow_through → user responds well to clear direction.
+- Higher insight_acceptance → user accepts behavioral observations.
+- conversation_count shows familiarity level.
+"""
+        pattern_insights = PatternInterpreter.interpret(self.pattern_memory)
+        pattern_interpretation = "\nObserved Behavioral Insights:\n"
+
+        for insight in pattern_insights:
+            pattern_interpretation += f"- {insight}\n"
 
         behavior_overlay = f"""
 
@@ -193,7 +240,7 @@ Tone Modulation Rules:
             + json.dumps(state, indent=2)
         )
 
-        return f"{core_identity}\n\n{behavioral_rules}\n{behavior_overlay}\n{state_context}"
+        return f"{core_identity}\n\n{behavioral_rules}\n{behavior_overlay}\n{state_context}\n{pattern_context}\n{pattern_interpretation}"
 
 
     # =========================================
