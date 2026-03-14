@@ -30,7 +30,11 @@ def main():
 
         response = luna.handle_user_input(user_input)
 
-        print(f"Luna: {response}")
+        if isinstance(response, list):
+            for r in response:
+                print(f"Luna: {r}")
+        else:
+            print(f"Luna: {response}")
 
 
 if __name__ == "__main__":

@@ -125,49 +125,40 @@ class ConversationManager:
 
         system_prompt = self._build_conversation_prompt()
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_input}
-        ]
+        tool_seconds = self.tool_router.execute_from_text(user_input)
 
-        tool_response_raw = self.llm.generate_response(
-            messages,
-            user_input=user_input,
-            tool_mode=True
-        )
+        if tool_seconds:
 
-        try:
-            tool_call = json.loads(tool_response_raw)
-        except Exception:
-            return "Tool request format invalid.", None
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": f"User asked for a timer of {tool_seconds} seconds. Confirm that the timer is starting."
+                }
+            ]
 
-        tool_result = self.tool_router.execute(tool_call)
+            response_text = self.llm.generate_response(
+                messages,
+                user_input=user_input,
+                tool_mode=False
+            )
 
-        followup_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Tool result: {tool_result}"}
-        ]
-
-        personality_response = self.llm.generate_response(
-            followup_messages,
-            user_input=user_input,
-            tool_mode=False
-        )
+        else:
+            response_text = "I couldn't detect a tool request."
 
         event = self._build_interaction_event(
             user_input=user_input,
-            response_text=personality_response,
+            response_text=response_text,
             interaction_type="tool_execution"
         )
 
         self.event_logger.log_event(event)
-
         self.evolution_engine.process_event(event, self.state)
         self._update_pattern_memory(event)
 
         StateManager.save_state(self.state)
 
-        return personality_response, event
+        return response_text, event
 
 
     # =========================================

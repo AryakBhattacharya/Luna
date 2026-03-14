@@ -26,7 +26,13 @@ class ModeDetector:
             "create folder",
             "delete folder",
             "make directory",
-            "clear terminal"
+            "clear terminal",
+
+            # timer
+            "timer",
+            "set timer",
+            "start timer",
+            "countdown"
         ]
 
         # Phrases that usually indicate conversation even if they contain keywords
