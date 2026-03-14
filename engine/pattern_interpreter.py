@@ -26,7 +26,7 @@ class PatternInterpreter:
             insights.append("User is receptive to behavioral observations.")
 
         # Familiarity level
-        if conversations > 10:
+        if conversations >= 10:
             insights.append("User is becoming familiar with Luna.")
 
         if not insights:

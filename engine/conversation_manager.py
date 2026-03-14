@@ -1,4 +1,6 @@
 import json
+import re
+
 from datetime import datetime
 
 from services.llm_client import LLMClient
@@ -27,6 +29,7 @@ class ConversationManager:
         self.tool_router = ToolRouter()
         self.pattern_memory = PatternMemory.load()
         self.event_logger = EventLogger()
+        self.history = []
 
         self.last_event = None
         self.last_response = None
@@ -83,16 +86,20 @@ class ConversationManager:
 
         system_prompt = self._build_conversation_prompt()
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_input}
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
+
+        messages.extend(self.history[-6:])
+
+        messages.append({"role": "user", "content": user_input})
 
         response_text = self.llm.generate_response(
             messages,
             user_input=user_input,
             tool_mode=False
         )
+
+        self.history.append({"role": "user", "content": user_input})
+        self.history.append({"role": "assistant", "content": response_text})
 
         event = self._build_interaction_event(
             user_input=user_input,
@@ -179,6 +186,12 @@ class ConversationManager:
         trust = state.get("trust_level", 0.5)
         proactive = state.get("proactivity_enabled", False)
 
+        insights = PatternInterpreter.interpret(self.pattern_memory)
+
+        insight_context = "\nBehavioral Insights:\n" + "\n".join(
+            f"- {insight}" for insight in insights
+        )
+
         pattern_context = f"""
 
 --------------------------------------
@@ -240,7 +253,19 @@ Tone Modulation Rules:
             + json.dumps(state, indent=2)
         )
 
-        return f"{core_identity}\n\n{behavioral_rules}\n{behavior_overlay}\n{state_context}\n{pattern_context}\n{pattern_interpretation}"
+        return f"""
+{core_identity}
+
+{behavioral_rules}
+
+{behavior_overlay}
+
+{state_context}
+
+{pattern_context}
+
+{insight_context}
+"""
 
 
     # =========================================
@@ -262,10 +287,25 @@ Tone Modulation Rules:
         lower_user = user_input.lower()
         lower_response = response_text.lower()
 
+        directive_patterns = [
+            r"^(start|go|try|do|take)\b",
+            r"\bnow\b",
+            r"\bspend \d+ minutes\b",
+            r"\bfocus on\b"
+        ]
+
         directive_given = False
 
-        if "start" in lower_response or "do it" in lower_response or "set" in lower_response:
-            directive_given = True
+        sentences = re.split(r"[.!?]\s*", lower_response.strip())
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            for pattern in directive_patterns:
+                if re.search(pattern, sentence):
+                    directive_given = True
+                    break
+            if directive_given:
+                break
 
         dominance = self.state.get("dominance_level", 0.4)
 
@@ -279,6 +319,22 @@ Tone Modulation Rules:
         else:
             directive_strength = "none"
 
+        completion_phrases = [
+            "done",
+            "finished",
+            "completed",
+            "i did it",
+            "it's done"
+        ]
+
+        action_completed = False
+
+        if self.last_event and self.last_event.get("directive_given"):
+            for phrase in completion_phrases:
+                if phrase in lower_user:
+                    action_completed = True
+                    break
+
         event = {
             "timestamp": datetime.utcnow().isoformat(),
             "interaction_type": interaction_type,
@@ -287,7 +343,7 @@ Tone Modulation Rules:
             "friction_type": "none",
             "directive_given": directive_given,
             "directive_strength": directive_strength,
-            "action_completed": False,
+            "action_completed": action_completed,
             "completion_latency_seconds": 0,
             "user_resistance_level": 0.2,
             "insight_given": False,

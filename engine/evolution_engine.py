@@ -70,7 +70,7 @@ class EvolutionEngine:
             dominance += 0.04
 
         if event.get("directive_given") and not event.get("action_completed"):
-            dominance -= 0.03
+            dominance -= 0.01
 
         if event.get("misjudgment_occurred"):
             dominance -= 0.03
