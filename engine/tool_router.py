@@ -1,6 +1,6 @@
 import os
 import re
-from engine.tools.timer_tool import TimerTool
+import subprocess
 
 
 class ToolRouter:
@@ -10,16 +10,55 @@ class ToolRouter:
 
     def execute_from_text(self, user_input):
 
-        text = user_input.lower()
+        text = user_input.lower().strip()
 
-        match = re.search(r"(\d+)\s*(sec|second)", text)
+        # ------------------------------
+        # TIMER TOOL
+        # ------------------------------
+        timer_match = re.search(r"(\d+)\s*(sec|second|seconds)", text)
 
-        if "timer" in text and match:
-            seconds = int(match.group(1))
+        if "timer" in text and timer_match:
 
-            # launch Windows clock timer
-            os.system("start ms-clock:")
+            seconds = timer_match.group(1)
 
-            return seconds
+            os.system(f'start ms-clock:timer')
+            return ("timer", seconds)
 
-        return None
+        # ------------------------------
+        # OPEN APPLICATION
+        # ------------------------------
+
+        open_match = re.search(r"(open|launch|start|run)\s+(.+)", text)
+
+        if open_match:
+
+            app_name = open_match.group(2).strip()
+
+            # 1️⃣ Try Start Menu / Windows resolver
+            try:
+                os.startfile(app_name)
+                return ("open_app", app_name)
+            except:
+                pass
+
+
+            # 2️⃣ Try executable
+            try:
+                subprocess.Popen(app_name)
+                return ("open_app", app_name)
+            except:
+                pass
+
+            try:
+                subprocess.Popen(app_name + ".exe")
+                return ("open_app", app_name)
+            except:
+                pass
+
+
+            # 3️⃣ Final fallback: Windows start command
+            try:
+                os.system(f'start "" "{app_name}"')
+                return ("open_app", app_name)
+            except:
+                return ("app_not_found", app_name)

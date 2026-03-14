@@ -67,12 +67,12 @@ class ConversationManager:
         mode = self.mode_detector.detect(user_input)
 
         if mode == "tool":
-            response_text, event = self._handle_tool_mode(user_input)
+            response_text = self._handle_tool_mode(user_input)
         else:
-            response_text, event = self._handle_conversation_mode(user_input)
+            response_text = self._handle_conversation_mode(user_input)
 
         # store memory
-        self.last_event = event
+        self.last_event = None
         self.last_response = response_text
 
         return response_text
@@ -125,16 +125,39 @@ class ConversationManager:
 
         system_prompt = self._build_conversation_prompt()
 
-        tool_seconds = self.tool_router.execute_from_text(user_input)
+        tool_result = self.tool_router.execute_from_text(user_input)
 
-        if tool_seconds:
+        if tool_result is None:
+
+            response_text = "I couldn't detect a tool request."
+
+            event = self._build_interaction_event(
+                user_input=user_input,
+                response_text=response_text,
+                interaction_type="tool_execution"
+            )
+
+            self.event_logger.log_event(event)
+            self.evolution_engine.process_event(event, self.state)
+            self._update_pattern_memory(event)
+            StateManager.save_state(self.state)
+
+            return response_text
+
+
+        tool_type, data = tool_result
+
+
+        # ------------------------------
+        # TIMER
+        # ------------------------------
+        if tool_type == "timer":
+
+            seconds = data
 
             messages = [
                 {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": f"User asked for a timer of {tool_seconds} seconds. Confirm that the timer is starting."
-                }
+                {"role": "user", "content": f"User asked for a {seconds}-second timer. Respond confirming the timer started."}
             ]
 
             response_text = self.llm.generate_response(
@@ -143,8 +166,32 @@ class ConversationManager:
                 tool_mode=False
             )
 
-        else:
-            response_text = "I couldn't detect a tool request."
+            event = self._build_interaction_event(
+                user_input=user_input,
+                response_text=response_text,
+                interaction_type="tool_execution"
+            )
+
+            self.event_logger.log_event(event)
+            self.evolution_engine.process_event(event, self.state)
+            self._update_pattern_memory(event)
+            StateManager.save_state(self.state)
+
+            return response_text
+
+
+        # ------------------------------
+        # OPEN APPLICATION
+        # ------------------------------
+        if tool_type == "open_app":
+
+            app = data
+            response_text = f"Opening {app}."
+
+        elif tool_type == "app_not_found":
+
+            app = data
+            response_text = f"I couldn't find {app} installed."
 
         event = self._build_interaction_event(
             user_input=user_input,
@@ -155,10 +202,9 @@ class ConversationManager:
         self.event_logger.log_event(event)
         self.evolution_engine.process_event(event, self.state)
         self._update_pattern_memory(event)
-
         StateManager.save_state(self.state)
 
-        return response_text, event
+        return response_text
 
 
     # =========================================
