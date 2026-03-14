@@ -6,6 +6,7 @@ from datetime import datetime
 from services.llm_client import LLMClient
 from engine.mode_detector import ModeDetector
 from engine.evolution_engine import EvolutionEngine
+from utils.app_indexer import AppIndexer
 from engine.tool_router import ToolRouter
 from utils.state_manager import StateManager
 from utils.event_logger import EventLogger
@@ -26,7 +27,13 @@ class ConversationManager:
         self.llm = LLMClient()
         self.mode_detector = ModeDetector()
         self.evolution_engine = EvolutionEngine()
-        self.tool_router = ToolRouter()
+
+        # Build app index FIRST
+        self.app_index = AppIndexer.build_index()
+
+        # Then create router
+        self.tool_router = ToolRouter(self.app_index)
+        
         self.pattern_memory = PatternMemory.load()
         self.event_logger = EventLogger()
         self.history = []
