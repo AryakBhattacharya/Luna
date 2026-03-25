@@ -28,6 +28,16 @@ class ModeDetector:
             "make directory",
             "clear terminal",
 
+            #System
+            "volume",
+            "increase volume",
+            "decrease volume",
+            "mute",
+            "unmute",
+            "wifi",
+            "bluetooth",
+            "airplane",
+
             # timer
             "timer",
             "set timer",

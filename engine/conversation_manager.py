@@ -121,7 +121,7 @@ class ConversationManager:
 
         StateManager.save_state(self.state)
 
-        return response_text, event
+        return response_text
 
 
     # =========================================
@@ -151,8 +151,14 @@ class ConversationManager:
 
             return response_text
 
-
         tool_type, data = tool_result
+
+
+        # ------------------------------
+        # SYSTEM ACTION RESPONSE
+        # ------------------------------
+        if tool_type == "system":
+            response_text = data
 
 
         # ------------------------------

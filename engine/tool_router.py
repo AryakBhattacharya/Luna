@@ -2,6 +2,8 @@ import os
 import re
 import subprocess
 
+from engine.tools.system_control import SystemControl
+
 
 class ToolRouter:
     """
@@ -26,6 +28,51 @@ class ToolRouter:
 
             os.system(f'start ms-clock:timer')
             return ("timer", seconds)
+        
+
+        # ------------------------------
+        # SYSTEM CONTROL
+        # ------------------------------
+
+        # Volume
+        if "volume up" in text or "increase volume" in text:
+            return ("system", SystemControl.volume_up())
+
+        if "volume down" in text or "decrease volume" in text:
+            return ("system", SystemControl.volume_down())
+
+        if "mute" in text:
+            return ("system", SystemControl.volume_mute())
+
+
+        # WiFi
+        if "wifi" in text:
+            if "on" in text:
+                return ("system", SystemControl.wifi_on())
+            elif "off" in text:
+                return ("system", SystemControl.wifi_off())
+            else:
+                return ("system", SystemControl.wifi_settings())
+
+
+        # Bluetooth
+        if "bluetooth" in text:
+            if "on" in text:
+                return ("system", SystemControl.bluetooth_on())
+            elif "off" in text:
+                return ("system", SystemControl.bluetooth_off())
+            else:
+                return ("system", SystemControl.bluetooth_settings())
+
+
+        # Airplane mode
+        if "airplane" in text:
+            if "on" in text:
+                return ("system", SystemControl.airplane_on())
+            elif "off" in text:
+                return ("system", SystemControl.airplane_off())
+            else:
+                return ("system", SystemControl.airplane_mode())
 
         # ------------------------------
         # OPEN APPLICATION

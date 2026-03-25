@@ -1,6 +1,28 @@
 from engine.conversation_manager import ConversationManager
 from utils.state_manager import StateManager
 import json
+import ctypes
+import sys
+
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+
+# Auto-elevate
+if not is_admin():
+    ctypes.windll.shell32.ShellExecuteW(
+        None,
+        "runas",
+        sys.executable,
+        " ".join(sys.argv),
+        None,
+        1
+    )
+    sys.exit()
 
 
 def print_state_snapshot():
