@@ -4,6 +4,10 @@ import json
 import ctypes
 import sys
 
+from audio.stt import SpeechToText
+from audio.tts import TextToSpeech
+from audio.wake_word import WakeWordListener
+
 
 def is_admin():
     try:
@@ -39,14 +43,35 @@ def main():
 
     luna = ConversationManager()
 
-    while True:
-        user_input = input("You: ")
+    stt = SpeechToText()
+    tts = TextToSpeech()
+    wake = WakeWordListener()
 
-        if user_input.lower() == "exit":
+    while True:
+
+        mode = input("Press Enter for voice or type command: ")
+
+        # TEXT MODE
+        if mode.strip():
+            user_input = mode
+
+        # VOICE MODE
+        else:
+            print("Listening for 'Luna'...")
+            wake.listen_for_wake()
+            print("Wake word detected.")
+            user_input = stt.listen()
+
+        if not user_input.strip():
+            continue
+
+        print(f"You: {user_input}")
+
+        if "exit" in user_input.lower():
             print("Exiting Luna.")
             break
 
-        if user_input.lower() == "state":
+        if "state" in user_input.lower():
             print_state_snapshot()
             continue
 
@@ -55,9 +80,10 @@ def main():
         if isinstance(response, list):
             for r in response:
                 print(f"Luna: {r}")
+                tts.speak(r)
         else:
             print(f"Luna: {response}")
-
+            tts.speak(response)
 
 if __name__ == "__main__":
     main()
