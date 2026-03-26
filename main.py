@@ -3,6 +3,7 @@ from utils.state_manager import StateManager
 import json
 import ctypes
 import sys
+import time
 
 from audio.stt import SpeechToText
 from audio.tts import TextToSpeech
@@ -49,41 +50,51 @@ def main():
 
     while True:
 
-        mode = input("Press Enter for voice or type command: ")
+        print("Listening for 'Luna'...")
+        wake.listen_for_wake()
 
-        # TEXT MODE
-        if mode.strip():
-            user_input = mode
+        print("Wake word detected.")
 
-        # VOICE MODE
-        else:
-            print("Listening for 'Luna'...")
-            wake.listen_for_wake()
-            print("Wake word detected.")
-            user_input = stt.listen()
+        silence_count = 0
 
-        if not user_input.strip():
-            continue
+        while True:
 
-        print(f"You: {user_input}")
+            time.sleep(0.5)
+            user_input = stt.listen(duration=4)
 
-        if "exit" in user_input.lower():
-            print("Exiting Luna.")
-            break
+            if not user_input.strip():
+                silence_count += 1
 
-        if "state" in user_input.lower():
-            print_state_snapshot()
-            continue
+                if silence_count >= 2:
+                    print("Exiting voice mode.\n")
+                    break
 
-        response = luna.handle_user_input(user_input)
+                continue
 
-        if isinstance(response, list):
-            for r in response:
-                print(f"Luna: {r}")
-                tts.speak(r)
-        else:
-            print(f"Luna: {response}")
-            tts.speak(response)
+            silence_count = 0
+
+            print(f"You: {user_input}")
+
+            if "exit" in user_input.lower():
+                print("Exiting Luna.")
+                return
+
+            if "state" in user_input.lower():
+                print_state_snapshot()
+                continue
+
+            # interrupt speech
+            tts.stop()
+
+            response = luna.handle_user_input(user_input)
+
+            if isinstance(response, list):
+                for r in response:
+                    print(f"Luna: {r}")
+                    tts.speak(r)
+            else:
+                print(f"Luna: {response}")
+                tts.speak(response)
 
 if __name__ == "__main__":
     main()

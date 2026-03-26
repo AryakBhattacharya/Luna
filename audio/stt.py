@@ -7,11 +7,12 @@ import tempfile
 class SpeechToText:
 
     def __init__(self):
-        self.model = whisper.load_model("base")
+        self.model = whisper.load_model("small")
 
     def listen(self, duration=5):
 
-        fs = 16000
+        fs = 44100
+        sd.stop()
 
         print("Listening...")
 

@@ -8,7 +8,7 @@
   "self_doubt_trigger_rate": 0.45,
   "ambiguity_stall_probability": 0.55,
   "insight_receptiveness": 0.6,
-  "directive_success_rate": 0.0029,
+  "directive_success_rate": 0.0023,
   "interaction_days": 0,
   "proactivity_enabled": false
 }

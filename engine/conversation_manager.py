@@ -105,6 +105,10 @@ class ConversationManager:
             tool_mode=False
         )
 
+        # 🔥 shorten long replies for faster speech
+        if len(response_text) > 200:
+            response_text = response_text[:200] + "..."
+
         self.history.append({"role": "user", "content": user_input})
         self.history.append({"role": "assistant", "content": response_text})
 

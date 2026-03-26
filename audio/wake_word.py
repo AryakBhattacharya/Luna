@@ -1,35 +1,30 @@
-import queue
 import sounddevice as sd
-import vosk
-import json
-
+import numpy as np
+from faster_whisper import WhisperModel
 
 class WakeWordListener:
 
     def __init__(self):
-        self.q = queue.Queue()
-        self.model = vosk.Model(lang="en-us")
-
-    def callback(self, indata, frames, time, status):
-        self.q.put(bytes(indata))
+        self.model = WhisperModel("base", device="cpu", compute_type="int8")
 
     def listen_for_wake(self):
+        print("Listening for 'Luna'...")
 
-        with sd.RawInputStream(
-            samplerate=16000,
-            blocksize=8000,
-            dtype="int16",
-            channels=1,
-            callback=self.callback
-        ):
-            rec = vosk.KaldiRecognizer(self.model, 16000)
+        fs = 16000
+        duration = 2  # short chunks
 
-            while True:
-                data = self.q.get()
+        while True:
+            audio = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
+            sd.wait()
 
-                if rec.AcceptWaveform(data):
-                    result = json.loads(rec.Result())
-                    text = result.get("text", "")
+            audio = np.squeeze(audio).astype(np.float32) / 32768.0
 
-                    if text.strip() in ["luna", "hey luna"]:
-                        return
+            segments, _ = self.model.transcribe(audio, beam_size=1)
+
+            for segment in segments:
+                text = segment.text.lower().strip()
+                print(f"HEARD: {text}")
+
+                if "luna" in text:
+                    print("Wake word detected!")
+                    return
