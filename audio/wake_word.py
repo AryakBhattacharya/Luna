@@ -11,10 +11,17 @@ class WakeWordListener:
         print("Listening for 'Luna'...")
 
         fs = 16000
-        duration = 2  # short chunks
+        duration = 1.5  # short chunks
 
         while True:
-            audio = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
+            sd.stop()
+            audio = sd.rec(
+                int(duration * fs),
+                samplerate=fs,
+                channels=1,
+                dtype='int16',
+                device=7
+            )
             sd.wait()
 
             audio = np.squeeze(audio).astype(np.float32) / 32768.0

@@ -65,7 +65,7 @@ def main():
             if not user_input.strip():
                 silence_count += 1
 
-                if silence_count >= 2:
+                if silence_count >= 4:
                     print("Exiting voice mode.\n")
                     break
 
@@ -88,13 +88,19 @@ def main():
 
             response = luna.handle_user_input(user_input)
 
+            # 🔴 disable listening during TTS
+
+            def speak_and_wait(text):
+                tts.speak(text)
+                time.sleep(3)  # adjust based on response length
+
             if isinstance(response, list):
                 for r in response:
                     print(f"Luna: {r}")
-                    tts.speak(r)
+                    speak_and_wait(r)
             else:
                 print(f"Luna: {response}")
-                tts.speak(response)
+                speak_and_wait(response)
 
 if __name__ == "__main__":
     main()

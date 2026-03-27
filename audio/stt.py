@@ -2,7 +2,7 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import whisper
 import tempfile
-
+import time
 
 class SpeechToText:
 
@@ -16,8 +16,15 @@ class SpeechToText:
 
         print("Listening...")
 
-        recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
+        recording = sd.rec(
+            int(duration * fs),
+            samplerate=fs,
+            channels=1,
+            dtype='int16',
+            device=7   # ADD THIS
+        )
         sd.wait()
+        time.sleep(0.3)
 
         temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         write(temp_file.name, fs, recording)
